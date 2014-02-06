@@ -50,7 +50,6 @@ end
 class Board
   def initialize
     @grid = Array.new(8) { Array.new(8) }
-    self.setup_board
   end
 
   def setup_board
@@ -58,12 +57,10 @@ class Board
       @grid[0][i] = Piece.new(:black) if i.odd?
       @grid[1][i] = Piece.new(:black) if i.even?
       @grid[2][i] = Piece.new(:black) if i.odd?
-      # @grid[3][i] = Piece.new(:black) if i.even?
 
       @grid[5][i] = Piece.new(:white) if i.even?
       @grid[6][i] = Piece.new(:white) if i.odd?
       @grid[7][i] = Piece.new(:white) if i.even?
-      # @grid[4][i] = Piece.new(:black) if i.even?
     end
   end
 
@@ -290,6 +287,7 @@ class Checkers
 end
 
 g = Board.new
+g.setup_board
 g.render
 p g.perform_moves!([[2, 1], [3, 2]])
 g.render
@@ -297,9 +295,7 @@ p g.perform_moves!([[3, 2], [4, 1]])
 g.render
 p g.perform_moves!([[1, 0], [2, 1]])
 g.render
-p g.perform_moves!([[5, 0], [3, 2]])
+p g.perform_moves!([[5, 0], [3, 2], [1,0]])
 g.render
-p g.perform_moves!([[3, 2], [1, 0]])
 # p g.perform_jump([1, 0], [3, 2]) # Test invalid move case
-debugger
 g.render
