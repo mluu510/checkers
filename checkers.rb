@@ -1,10 +1,41 @@
+require 'debugger'
 require 'colorize'
+
+class InvalidMoveError < Exception
+end
 
 class Piece
   attr_reader :color
   attr_accessor :is_king
   def initialize(color, is_king=false)
     @color, @is_king = color, is_king
+  end
+
+  def slide_diffs
+    if self.is_king
+      [[-1, -1], [-1, 1], [1, -1], [1, 1]]
+    elsif self.color == :black
+      [[1, -1], [1, 1]]
+    else
+      [[-1, -1], [-1, 1]]
+    end
+  end
+
+  def jump_diffs
+    jumps = nil
+    target_pos = nil
+    if piece.is_king
+      jumps      =  [[-2, -2], [-2, 2], [2, -2], [2, 2]]
+      target_pos =  [[-1, -1], [-1, 1], [1, -1], [1, 1]]
+    elsif piece.color == :black
+      jumps = [[2, -2], [2, 2]]
+      target_pos = [[1, -1], [1, 1]]
+    else
+      jumps = [[-2, -2], [-2, 2]]
+      target_pos = [[-1, -1], [-1, 1]]
+    end
+
+    jumps.zip(target_pos)
   end
 
   def to_s
@@ -36,6 +67,10 @@ class Board
     end
   end
 
+  def []=(pos, value)
+    @grid[pos.first][pos.last] = value
+  end
+
   def dup
     # Create a new board
     duped_board = Board.new
@@ -44,7 +79,7 @@ class Board
     @grid.each_with_index do |rows, r_idx|
       rows.each_with_index do |piece, c_idx|
         next if piece.nil?
-        duped_board[r_idx][c_idx] = Piece.new(piece.color, piece.is_king)
+        duped_board[[r_idx, c_idx]] = Piece.new(piece.color, piece.is_king)
       end
     end
 
@@ -57,32 +92,52 @@ class Board
 
     # Dup the board, then perform test move sequence on the dupped board
     duped_board = self.dup
+    if move_sequence.count == 2
+      # Attempt slide first
+      start_pos = move_sequence.first
+      end_pos = move_sequence.last
+      # debugger
+      is_valid_move = duped_board.perform_slide(start_pos, end_pos)
 
-    # Test move sequence
-    valid_move? = true
-    move_sequence.each_with_index do |move_pos, idx|
-      next_move_pos = move_sequence[idx+1]
-      next if next_move_pos.nil?
-
-      if move_sequence.count == 2
-        valid_move? = duped_board.perform_slide(move_pos, next_move_pos)
+      # Slide worked, so DO IT!
+      if is_valid_move
+        puts "Performing slide from #{start_pos} to #{end_pos}"
+        self.perform_slide(start_pos, end_pos)
       else
-        valid_move? = duped_board.perform_jump(move_pos, next_move_pos)
+        # debugger
+        # Slide didn't work, attempting jump
+        is_valid_move = duped_board.perform_jump(start_pos, end_pos)
+        if is_valid_move
+          puts "Performing jump from #{start_pos} to #{end_pos}"
+          self.perform_jump(start_pos, end_pos)
+        else
+          raise InvalidMoveError
+        end
       end
-      Raise InvalidMoveError unless valid_move?
-    end
 
-    # Performing actual move sequence
-    move_sequence.each_with_index do |move_pos, idx|
-      next_move_pos = move_sequence[idx+1]
-      next if next_move_pos.nil?
+    else
+      puts "Testing multi jumps sequence"
+      # Must be a multi jump sequence, TEST IT!
+      move_sequence.each_with_index do |move_pos, idx|
+        # debugger
+        next_move_pos = move_sequence[idx+1]
+        next if next_move_pos.nil?
 
-      if move_sequence.count == 2
-        self.perform_slide(move_pos, next_move_pos)
-      else
+        is_valid_move = duped_board.perform_jump(move_pos, next_move_pos)
+        raise InvalidMoveError unless is_valid_move
+      end
+
+      # Multi jump sequence are valid! Do it!
+      puts "Performing multi jumps sequence"
+      move_sequence.each_with_index do |move_pos, idx|
+        next_move_pos = move_sequence[idx+1]
+        next if next_move_pos.nil?
+
         self.perform_jump(move_pos, next_move_pos)
       end
+      puts "Nice move!"
     end
+    puts "Done."
   end
 
   def perform_slide(start_pos, end_pos)
@@ -145,18 +200,18 @@ class Board
     jumps = nil
     target_pos = nil
     if piece.is_king
-      moves      =  [[-2, -2], [-2, 2], [2, -2], [2, 2]]
+      jumps      =  [[-2, -2], [-2, 2], [2, -2], [2, 2]]
       target_pos =  [[-1, -1], [-1, 1], [1, -1], [1, 1]]
     elsif piece.color == :black
-      moves = [[2, -2], [2, 2]]
+      jumps = [[2, -2], [2, 2]]
       target_pos = [[1, -1], [1, 1]]
     else
-      moves = [[-2, -2], [-2, 2]]
+      jumps = [[-2, -2], [-2, 2]]
       target_pos = [[-1, -1], [-1, 1]]
     end
 
     # Translate diffs into actual positions
-    moves.map! do |d_row, d_col|
+    jumps.map! do |d_row, d_col|
       [pos.first + d_row, pos.last + d_col]
     end
     target_pos.map! do |d_row, d_col|
@@ -164,7 +219,7 @@ class Board
     end
 
     # Zip jumps and target_pos into pairs
-    jump_target_pairs = moves.zip(target_pos)
+    jump_target_pairs = jumps.zip(target_pos)
     # p jump_target_pairs
 
     # Filter out out possible moves
@@ -236,12 +291,15 @@ end
 
 g = Board.new
 g.render
-# p g.slide_moves([2, 1])
-g.perform_moves!([[2, 1], [3, 2]])
+p g.perform_moves!([[2, 1], [3, 2]])
 g.render
-# p g.slide_moves([3, 2])
-g.perform_slide([3, 2], [4, 1])
+p g.perform_moves!([[3, 2], [4, 1]])
 g.render
-# p g.jump_moves([5, 0])
-g.perform_jump([5, 0], [3, 2])
+p g.perform_moves!([[1, 0], [2, 1]])
+g.render
+p g.perform_moves!([[5, 0], [3, 2]])
+g.render
+p g.perform_moves!([[3, 2], [1, 0]])
+# p g.perform_jump([1, 0], [3, 2]) # Test invalid move case
+debugger
 g.render
