@@ -36,6 +36,55 @@ class Board
     end
   end
 
+  def dup
+    # Create a new board
+    duped_board = Board.new
+
+    # Generate same pieces to the dupped board
+    @grid.each_with_index do |rows, r_idx|
+      rows.each_with_index do |piece, c_idx|
+        next if piece.nil?
+        duped_board[r_idx][c_idx] = Piece.new(piece.color, piece.is_king)
+      end
+    end
+
+    duped_board
+  end
+
+  def perform_moves!(move_sequence)
+    # Needs at least two positions to make a move
+    Raise InvalidMoveError if move_sequence.count < 2
+
+    # Dup the board, then perform test move sequence on the dupped board
+    duped_board = self.dup
+
+    # Test move sequence
+    valid_move? = true
+    move_sequence.each_with_index do |move_pos, idx|
+      next_move_pos = move_sequence[idx+1]
+      next if next_move_pos.nil?
+
+      if move_sequence.count == 2
+        valid_move? = duped_board.perform_slide(move_pos, next_move_pos)
+      else
+        valid_move? = duped_board.perform_jump(move_pos, next_move_pos)
+      end
+      Raise InvalidMoveError unless valid_move?
+    end
+
+    # Performing actual move sequence
+    move_sequence.each_with_index do |move_pos, idx|
+      next_move_pos = move_sequence[idx+1]
+      next if next_move_pos.nil?
+
+      if move_sequence.count == 2
+        self.perform_slide(move_pos, next_move_pos)
+      else
+        self.perform_jump(move_pos, next_move_pos)
+      end
+    end
+  end
+
   def perform_slide(start_pos, end_pos)
     possible_slides = self.slide_moves(start_pos)
     return false if possible_slides.none? do |possible_pos|
@@ -188,7 +237,7 @@ end
 g = Board.new
 g.render
 # p g.slide_moves([2, 1])
-g.perform_slide([2, 1], [3, 2])
+g.perform_moves!([[2, 1], [3, 2]])
 g.render
 # p g.slide_moves([3, 2])
 g.perform_slide([3, 2], [4, 1])
