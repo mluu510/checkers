@@ -83,9 +83,19 @@ class Board
     duped_board
   end
 
+  # Not required???
+  def valid_move_seq?(move_sequence)
+    begin
+      self.perform_moves!(move_sequence)
+    rescue
+      return false
+    end
+    true
+  end
+
   def perform_moves!(move_sequence)
     # Needs at least two positions to make a move
-    Raise InvalidMoveError if move_sequence.count < 2
+    raise InvalidMoveError if move_sequence.count < 2
 
     # Dup the board, then perform test move sequence on the dupped board
     duped_board = self.dup
@@ -98,14 +108,14 @@ class Board
 
       # Slide worked, so DO IT!
       if is_valid_move
-        puts "Performing slide from #{start_pos} to #{end_pos}"
+        puts "Slided from #{start_pos} to #{end_pos}."
         self.perform_slide(start_pos, end_pos)
       else
         # debugger
         # Slide didn't work, attempting jump
         is_valid_move = duped_board.perform_jump(start_pos, end_pos)
         if is_valid_move
-          puts "Performing jump from #{start_pos} to #{end_pos}"
+          puts "Jumped from #{start_pos} to #{end_pos}."
           self.perform_jump(start_pos, end_pos)
         else
           raise InvalidMoveError
@@ -113,7 +123,7 @@ class Board
       end
 
     else
-      puts "Testing multi jumps sequence"
+      # puts "Testing multi jumps sequence"
       # Must be a multi jump sequence, TEST IT!
       move_sequence.each_with_index do |move_pos, idx|
         # debugger
@@ -125,7 +135,7 @@ class Board
       end
 
       # Multi jump sequence are valid! Do it!
-      puts "Performing multi jumps sequence"
+      puts "Performing multi-jumps sequence!"
       move_sequence.each_with_index do |move_pos, idx|
         next_move_pos = move_sequence[idx+1]
         next if next_move_pos.nil?
@@ -134,7 +144,6 @@ class Board
       end
       puts "Nice move!"
     end
-    puts "Done."
   end
 
   def perform_slide(start_pos, end_pos)
@@ -231,23 +240,16 @@ class Board
     piece = @grid[pos.first][pos.last]
     raise StandardError.new("No piece found!") if piece.nil?
 
-    moves = nil
-    if piece.is_king
-      moves = [[-1, -1], [-1, 1], [1, -1], [1, 1]]
-    elsif piece.color == :black
-      moves = [[1, -1], [1, 1]]
-    else
-      moves = [[-1, -1], [-1, 1]]
-    end
+    slides = piece.slide_diffs
 
     # Translate diffs into actual positions
-    moves.map do |d_row, d_col|
-      move = [pos.first + d_row, pos.last + d_col]
-    end.select do |pos|
-      self.in_bound?(pos)
-    end.select do |pos|
+    slides.map do |slide_pos|
+      [pos.first + slide_pos.first, pos.last + slide_pos.last]
+    end.select do |slide_pos|
+      self.in_bound?(slide_pos)
+    end.select do |slide_pos|
       # Check if position is empty
-      @grid[pos.first][pos.last].nil?
+      @grid[slide_pos.first][slide_pos.last].nil?
     end
   end
 
@@ -283,19 +285,67 @@ end
 class Checkers
   def initialize
     @board = Board.new
+    @board.setup_board
+    @player1 = HumanPlayer.new
+    @player2 = HumanPlayer.new
+    @current_player = player1
+    puts "Welcome to Checkers. Let's play!"
+    self.play
+  end
+
+  def play
+    while true
+      @board.render
+      puts "#{@current_player.color}'s turn. Enter your move sequence."
+      move_sequence = @current_player.get_move_sequence
+      begin
+        @board.perform_moves(move_sequence)
+      rescue
+        puts "Invalid move sequence! Please try again."
+        move_sequence = @current_player.get_move_sequence
+        @board.perform_moves(move_sequence)
+      end
+    end
+  end
+
+end
+
+class Player
+  def initialize(color)
+    raise StandardError.new("Invalid color!") if color != :black || color != :white
+
+    @color = color
+  end
+
+  def color
+    if @color == :black
+      'Black'
+    else
+      'White'
+    end
   end
 end
 
-g = Board.new
-g.setup_board
-g.render
-p g.perform_moves!([[2, 1], [3, 2]])
-g.render
-p g.perform_moves!([[3, 2], [4, 1]])
-g.render
-p g.perform_moves!([[1, 0], [2, 1]])
-g.render
-p g.perform_moves!([[5, 0], [3, 2], [1,0]])
-g.render
+class HumanPlayer
+  def get_move_sequence
+    move_sequence = gets.chomp.split(' ').map do |pos_str|
+      pos_str.split(',')
+    end
+    p move_sequence
+    move_sequence
+  end
+end
+
+board = Board.new
+board.setup_board
+board.render
+board.perform_moves!([[2, 1], [3, 2]])
+board.render
+board.perform_moves!([[3, 2], [4, 1]])
+board.render
+board.perform_moves!([[1, 0], [2, 1]])
+board.render
+board.perform_moves!([[5, 0], [3, 2], [1,0]])
+board.render
 # p g.perform_jump([1, 0], [3, 2]) # Test invalid move case
-g.render
+
