@@ -1,4 +1,5 @@
 require 'debugger'
+require 'io/console'
 require 'colorize'
 require './board.rb'
 
@@ -7,7 +8,7 @@ class Checkers
     @board = Board.new
     @board.setup_board
     @player1 = HumanPlayer.new(:black)
-    @player2 = HumanPlayer.new(:white)
+    @player2 = HumanPlayer.new(:red)
     @current_player = @player1
     puts "Welcome to Checkers. Let's play!"
     self.play
@@ -67,7 +68,7 @@ end
 class Player
   attr_reader :color
   def initialize(color)
-    raise StandardError.new("Invalid color!") if color != :black && color != :white
+    raise StandardError.new("Invalid color!") if color != :black && color != :red
 
     @color = color
   end
@@ -76,7 +77,7 @@ class Player
     if @color == :black
       'Black'
     else
-      'White'
+      'Red'
     end
   end
 end

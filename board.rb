@@ -9,14 +9,25 @@ class Board
   end
 
   def setup_board
+    # @grid.each_with_index do |rows, r_idx|
+    #   # Skip rows with no pieces
+    #   next if r_idx == 3 || r_idx == 4
+    #   color = (r_idx < 3 ? :black : :white)
+    #   rows.each do |cell, c_idx|
+    #     if (r_idx + c_idx).odd?
+    #       @grid[r_idx][c_idx] = Piece.new(color)
+    #     end
+    #   end
+    # end
+
     8.times do |i|
       @grid[0][i] = Piece.new(:black) if i.odd?
       @grid[1][i] = Piece.new(:black) if i.even?
       @grid[2][i] = Piece.new(:black) if i.odd?
 
-      @grid[5][i] = Piece.new(:white) if i.even?
-      @grid[6][i] = Piece.new(:white) if i.odd?
-      @grid[7][i] = Piece.new(:white) if i.even?
+      @grid[5][i] = Piece.new(:red) if i.even?
+      @grid[6][i] = Piece.new(:red) if i.odd?
+      @grid[7][i] = Piece.new(:red) if i.even?
     end
   end
 
@@ -143,7 +154,7 @@ class Board
     # Black piece has reach the end of the board and needs to be promoted
     if piece.color == :black && piece_pos.first == 7
       piece.is_king = true
-    elsif piece.color == :white && piece_pos.first == 0
+    elsif piece.color == :red && piece_pos.first == 0
       piece.is_king = true
     end
   end
@@ -215,22 +226,20 @@ class Board
   end
 
   def render
-    labels = "  0 1 2 3 4 5 6 7".blue
+    labels = "  0 1 2 3 4 5 6 7".white
     puts labels
     @grid.each_with_index do |rows, r_idx|
-      str = "#{r_idx} ".blue
+      str = "#{r_idx} ".white
       rows.each_with_index do |piece, c_idx|
+        color = (r_idx+c_idx).odd? ? :white : :light_white
+
         if piece
-          str += "#{piece} "
+          str += "#{piece} ".colorize(:color => piece.color, :background => color)
         else
-          if (r_idx + c_idx).odd?
-            str += "- "
-          else
-            str += "  "
-          end
+            str += "  ".colorize(:background => color)
         end
       end
-      puts str + "#{r_idx}".blue
+      puts str + "#{r_idx}".white
     end
     puts labels
   end

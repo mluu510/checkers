@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 class Piece
   attr_reader :color
   attr_accessor :is_king
@@ -33,10 +35,10 @@ class Piece
   end
 
   def to_s
-    if color == :black
-      'B'
+    if self.is_king
+      '♚'
     else
-      'W'
+      '♟'
     end
   end
 end
