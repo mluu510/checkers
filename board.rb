@@ -39,68 +39,66 @@ class Board
     duped_board
   end
 
-  # Not required???
-  def valid_move_seq?(move_sequence)
-    begin
-      self.perform_moves!(move_sequence)
-    rescue
-      return false
-    end
-    true
-  end
-
   def perform_moves!(move_sequence)
     # Needs at least two positions to make a move
     raise InvalidMoveError if move_sequence.count < 2
 
-    # Dup the board, then perform test move sequence on the dupped board
-    duped_board = self.dup
     if move_sequence.count == 2
       # Attempt slide first
-      start_pos = move_sequence.first
-      end_pos = move_sequence.last
-      # debugger
-      is_valid_move = duped_board.perform_slide(start_pos, end_pos)
-
-      # Slide worked, so DO IT!
-      if is_valid_move
-        puts "Slided from #{start_pos} to #{end_pos}."
-        self.perform_slide(start_pos, end_pos)
-      else
-        # debugger
-        # Slide didn't work, attempting jump
-        is_valid_move = duped_board.perform_jump(start_pos, end_pos)
-        if is_valid_move
-          puts "Jumped from #{start_pos} to #{end_pos}."
-          self.perform_jump(start_pos, end_pos)
-        else
-          raise InvalidMoveError
-        end
-      end
-
+      self.attempt_single_move_sequence(move_sequence)
     else
       # puts "Testing multi jumps sequence"
       # Must be a multi jump sequence, TEST IT!
-      move_sequence.each_with_index do |move_pos, idx|
-        # debugger
-        next_move_pos = move_sequence[idx+1]
-        next if next_move_pos.nil?
-
-        is_valid_move = duped_board.perform_jump(move_pos, next_move_pos)
-        raise InvalidMoveError unless is_valid_move
-      end
-
-      # Multi jump sequence are valid! Do it!
-      puts "Performing multi-jumps sequence!"
-      move_sequence.each_with_index do |move_pos, idx|
-        next_move_pos = move_sequence[idx+1]
-        next if next_move_pos.nil?
-
-        self.perform_jump(move_pos, next_move_pos)
-      end
-      puts "Nice move!"
+      self.attempt_multi_jump_sequence(move_sequence)
     end
   end
+
+  def attempt_single_move_sequence(move_sequence)
+    duped_board = self.dup
+    start_pos = move_sequence.first
+    end_pos = move_sequence.last
+    # debugger
+    is_valid_move = duped_board.perform_slide(start_pos, end_pos)
+
+    # Slide worked, so DO IT!
+    if is_valid_move
+      puts "Slided from #{start_pos} to #{end_pos}."
+      self.perform_slide(start_pos, end_pos)
+    else
+      # debugger
+      # Slide didn't work, attempting jump
+      is_valid_move = duped_board.perform_jump(start_pos, end_pos)
+      if is_valid_move
+        puts "Jumped from #{start_pos} to #{end_pos}."
+        self.perform_jump(start_pos, end_pos)
+      else
+        raise InvalidMoveError
+      end
+    end
+  end
+
+  def attempt_multi_jump_sequence(move_sequence)
+    duped_board = self.dup
+    move_sequence.each_with_index do |move_pos, idx|
+      # debugger
+      next_move_pos = move_sequence[idx+1]
+      next if next_move_pos.nil?
+
+      is_valid_move = duped_board.perform_jump(move_pos, next_move_pos)
+      raise InvalidMoveError unless is_valid_move
+    end
+
+    # Multi-jump sequence is valid! Do it!
+    puts "Performing multi-jumps sequence!"
+    move_sequence.each_with_index do |move_pos, idx|
+      next_move_pos = move_sequence[idx+1]
+      next if next_move_pos.nil?
+
+      self.perform_jump(move_pos, next_move_pos)
+    end
+    puts "Nice move!"
+  end
+
 
   def perform_slide(start_pos, end_pos)
     possible_slides = self.slide_moves(start_pos)
